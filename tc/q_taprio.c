@@ -154,6 +154,7 @@ static struct sched_entry *create_entry(uint32_t gatemask, uint32_t interval, ui
 static int taprio_parse_opt(struct qdisc_util *qu, int argc,
 			    char **argv, struct nlmsghdr *n, const char *dev)
 {
+	__u32 offload_flags = UINT32_MAX;
 	__s32 clockid = CLOCKID_INVALID;
 	struct tc_mqprio_qopt opt = { };
 	__s64 cycle_time_extension = 0;
@@ -305,6 +306,17 @@ static int taprio_parse_opt(struct qdisc_util *qu, int argc,
 				return -1;
 			}
 
+		} else if (strcmp(*argv, "offload") == 0) {
+			NEXT_ARG();
+			if (offload_flags != UINT32_MAX) {
+				fprintf(stderr, "taprio: duplicate \"offload\" specification\n");
+				return -1;
+			}
+			if (get_u32(&offload_flags, *argv, 0)) {
+				PREV_ARG();
+				return -1;
+			}
+
 		} else if (strcmp(*argv, "help") == 0) {
 			explain();
 			return -1;
@@ -323,6 +335,9 @@ static int taprio_parse_opt(struct qdisc_util *qu, int argc,
 
 	if (taprio_flags)
 		addattr_l(n, 1024, TCA_TAPRIO_ATTR_FLAGS, &taprio_flags, sizeof(taprio_flags));
+
+	if (offload_flags != UINT32_MAX)
+		addattr_l(n, 1024, TCA_TAPRIO_ATTR_OFFLOAD_FLAGS, &offload_flags, sizeof(offload_flags));
 
 	if (opt.num_tc > 0)
 		addattr_l(n, 1024, TCA_TAPRIO_ATTR_PRIOMAP, &opt, sizeof(opt));
@@ -435,6 +450,7 @@ static int taprio_print_opt(struct qdisc_util *qu, FILE *f, struct rtattr *opt)
 	struct rtattr *tb[TCA_TAPRIO_ATTR_MAX + 1];
 	struct tc_mqprio_qopt *qopt = 0;
 	__s32 clockid = CLOCKID_INVALID;
+	__u32 offload_flags = 0;
 	int i;
 
 	if (opt == NULL)
@@ -485,6 +501,11 @@ static int taprio_print_opt(struct qdisc_util *qu, FILE *f, struct rtattr *opt)
 		txtime_delay = rta_getattr_s32(tb[TCA_TAPRIO_ATTR_TXTIME_DELAY]);
 		print_uint(PRINT_ANY, "txtime_delay", " txtime delay %d", txtime_delay);
 	}
+
+	if (tb[TCA_TAPRIO_ATTR_OFFLOAD_FLAGS])
+		offload_flags = rta_getattr_u32(tb[TCA_TAPRIO_ATTR_OFFLOAD_FLAGS]);
+
+	print_uint(PRINT_ANY, "offload", " offload %x", offload_flags);
 
 	print_schedule(f, tb);
 
