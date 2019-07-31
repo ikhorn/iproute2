@@ -395,9 +395,9 @@ enum {
 struct tc_htb_xstats {
 	__u32 lends;
 	__u32 borrows;
-	__u32 giants;	/* too big packets (rate will not be accurate) */
-	__u32 tokens;
-	__u32 ctokens;
+	__u32 giants;	/* unused since 'Make HTB scheduler work with TSO.' */
+	__s32 tokens;
+	__s32 ctokens;
 };
 
 /* HFSC section */
@@ -960,6 +960,7 @@ struct tc_etf_qopt {
 	__u32 flags;
 #define TC_ETF_DEADLINE_MODE_ON	BIT(0)
 #define TC_ETF_OFFLOAD_ON	BIT(1)
+#define TC_ETF_SKIP_SOCK_CHECK	BIT(2)
 };
 
 enum {
@@ -1083,5 +1084,72 @@ enum {
 	CAKE_ATM_PTM,
 	CAKE_ATM_MAX
 };
+
+
+/* TAPRIO */
+enum {
+	TC_TAPRIO_CMD_SET_GATES = 0x00,
+	TC_TAPRIO_CMD_SET_AND_HOLD = 0x01,
+	TC_TAPRIO_CMD_SET_AND_RELEASE = 0x02,
+};
+
+enum {
+	TCA_TAPRIO_SCHED_ENTRY_UNSPEC,
+	TCA_TAPRIO_SCHED_ENTRY_INDEX, /* u32 */
+	TCA_TAPRIO_SCHED_ENTRY_CMD, /* u8 */
+	TCA_TAPRIO_SCHED_ENTRY_GATE_MASK, /* u32 */
+	TCA_TAPRIO_SCHED_ENTRY_INTERVAL, /* u32 */
+	__TCA_TAPRIO_SCHED_ENTRY_MAX,
+};
+#define TCA_TAPRIO_SCHED_ENTRY_MAX (__TCA_TAPRIO_SCHED_ENTRY_MAX - 1)
+
+/* The format for schedule entry list is:
+ * [TCA_TAPRIO_SCHED_ENTRY_LIST]
+ *   [TCA_TAPRIO_SCHED_ENTRY]
+ *     [TCA_TAPRIO_SCHED_ENTRY_CMD]
+ *     [TCA_TAPRIO_SCHED_ENTRY_GATES]
+ *     [TCA_TAPRIO_SCHED_ENTRY_INTERVAL]
+ */
+enum {
+	TCA_TAPRIO_SCHED_UNSPEC,
+	TCA_TAPRIO_SCHED_ENTRY,
+	__TCA_TAPRIO_SCHED_MAX,
+};
+
+#define TCA_TAPRIO_SCHED_MAX (__TCA_TAPRIO_SCHED_MAX - 1)
+
+/* The format for the admin sched (dump only):
+ * [TCA_TAPRIO_SCHED_ADMIN_SCHED]
+ *   [TCA_TAPRIO_ATTR_SCHED_BASE_TIME]
+ *   [TCA_TAPRIO_ATTR_SCHED_ENTRY_LIST]
+ *     [TCA_TAPRIO_ATTR_SCHED_ENTRY]
+ *       [TCA_TAPRIO_ATTR_SCHED_ENTRY_CMD]
+ *       [TCA_TAPRIO_ATTR_SCHED_ENTRY_GATES]
+ *       [TCA_TAPRIO_ATTR_SCHED_ENTRY_INTERVAL]
+ */
+
+#define TCA_TAPRIO_ATTR_FLAG_TXTIME_ASSIST 0x1
+#define TCA_TAPRIO_ATTR_OFFLOAD_FLAG_FULL_OFFLOAD 0x1
+#define TCA_TAPRIO_ATTR_OFFLOAD_FLAG_TXTIME_OFFLOAD 0x2
+
+enum {
+	TCA_TAPRIO_ATTR_UNSPEC,
+	TCA_TAPRIO_ATTR_PRIOMAP, /* struct tc_mqprio_qopt */
+	TCA_TAPRIO_ATTR_SCHED_ENTRY_LIST, /* nested of entry */
+	TCA_TAPRIO_ATTR_SCHED_BASE_TIME, /* s64 */
+	TCA_TAPRIO_ATTR_SCHED_SINGLE_ENTRY, /* single entry */
+	TCA_TAPRIO_ATTR_SCHED_CLOCKID, /* s32 */
+	TCA_TAPRIO_PAD,
+	TCA_TAPRIO_ATTR_ADMIN_SCHED, /* The admin sched, only used in dump */
+	TCA_TAPRIO_ATTR_SCHED_CYCLE_TIME, /* s64 */
+	TCA_TAPRIO_ATTR_SCHED_CYCLE_TIME_EXTENSION, /* s64 */
+	TCA_TAPRIO_ATTR_FRAME_PREEMPTION, /* u32 */
+	TCA_TAPRIO_ATTR_FLAGS, /* u32 */
+	TCA_TAPRIO_ATTR_TXTIME_DELAY, /* s32 */
+	TCA_TAPRIO_ATTR_OFFLOAD_FLAGS, /* u32 */
+	__TCA_TAPRIO_ATTR_MAX,
+};
+
+#define TCA_TAPRIO_ATTR_MAX (__TCA_TAPRIO_ATTR_MAX - 1)
 
 #endif
